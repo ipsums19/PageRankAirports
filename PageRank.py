@@ -66,31 +66,41 @@ def readRoutes(fd):
         else:
             e = Edge(origen)
             edgeHash[destino] = e
-        print origen in airportHash
-        airportHash[origen].outweight += 1
+        if origen in airportHash:
+            airportHash[origen].outweight += 1
 
-    edgeTxt.close()
-    print "There were {0} Airports with IATA code".format(cont)
-
-def sumWeigths(destino):
-    sum = 0
-    for origen, value in edgeHash[destino].originHash.iteritems():
-        sum += [origen] * value / airportHash[origen].outweight
-    return sum
+    edgesTxt.close()
 
 P = dict()
+def sumWeigths(destino):
+    sum = 0
+    if destino in edgeHash:
+        for origen, value in edgeHash[destino].originHash.iteritems():
+            if origen in P:
+                sum += P[origen] * value / airportHash[origen].outweight
+    else:
+        sum = 1./len(airportList)
+    return sum
+
 def computePageRanks():
-    # write your code
     n = len(airportList)
-    for airport in airportHash:
-        P[airport.name] = 1./n
+    global P
+    for code, airport in airportHash.iteritems():
+        P[code] = 1./n
     L = 0.8
-    for a in range(10):
+    rounds = 0
+    while 1:
+        rounds += 1
         Q = dict()
-        for i in n:
-            Q[i.name] = L * sumWeigths(i.name) + (1.-L)*n
+        for i in airportList:
+            Q[i.code] = L * sumWeigths(i.code) + (1.-L)/n
+        thresh = 0
+        for key, value in P.iteritems():
+            if abs(value - Q[key]) >= 0.0000000000001*value:
+                thresh += 1
         P = Q
-    return 10
+        if thresh < 1:
+            return rounds
 
 import operator
 def outputPageRanks():
